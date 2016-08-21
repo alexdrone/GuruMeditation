@@ -1,0 +1,10 @@
+framework module GuruMeditation {
+  umbrella header "GuruMeditation.h"
+
+  export *
+  module * { export * }
+}
+
+module GuruMeditation.Swift {
+    header "GuruMeditation-Swift.h"
+}
