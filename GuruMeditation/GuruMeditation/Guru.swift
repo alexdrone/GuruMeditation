@@ -28,10 +28,10 @@ import UIKit
 
 public struct Guru {
 
-  public static func error(message: String,
+  public static func error(_ message: String,
                            includeStack: Bool = false) {
     let vc = GuruMeditationViewController()
-    let message = formatMessage(message, stack: includeStack ? NSThread.callStackSymbols() : [])
+    let message = formatMessage(message, stack: includeStack ? Thread.callStackSymbols : [])
     vc.errorMessage = message
     vc.style = .Error
     vc.didTapClosure = {
@@ -40,10 +40,10 @@ public struct Guru {
     OverlayWindow.presentModalOverlay(vc)
   }
 
-  public static func warning(message: String,
+  public static func warning(_ message: String,
                              includeStack: Bool = false,
                              closure: ((Void) -> Void)? = nil) {
-    let message = formatMessage(message, stack: includeStack ? NSThread.callStackSymbols(): [])
+    let message = formatMessage(message, stack: includeStack ? Thread.callStackSymbols: [])
     let vc = GuruMeditationViewController()
     vc.errorMessage = message
     vc.style = .Warning
@@ -54,10 +54,10 @@ public struct Guru {
     OverlayWindow.presentModalOverlay(vc)
   }
 
-  private static func formatMessage(message: String, stack: [String]) -> String {
+  fileprivate static func formatMessage(_ message: String, stack: [String]) -> String {
     return stack.isEmpty
       ? message
-      : "\(message)\n\n\(stack.map({"\n\($0)\n"}).joinWithSeparator("\n"))"
+      : "\(message)\n\n\(stack.map({"\n\($0)\n"}).joined(separator: "\n"))"
   }
 }
 
@@ -71,7 +71,7 @@ internal class GuruMeditationViewController: UIViewController {
   }
 
   override internal class func initialize() {
-    NSBundle.loadTopazFont()
+    Bundle.loadTopazFont()
   }
 
   internal var errorMessage: String = "" {
@@ -86,31 +86,31 @@ internal class GuruMeditationViewController: UIViewController {
     }
   }
 
-  private func updateErrorLabelText(message: String = "No error description.") {
+  fileprivate func updateErrorLabelText(_ message: String = "No error description.") {
     self.errorLabel.text = self.style.rawValue + message
   }
 
-  private lazy var errorLabel: InsetLabel = {
+  fileprivate lazy var errorLabel: InsetLabel = {
     let label = InsetLabel()
     label.numberOfLines = 0
     label.font = UIFont.topazFontOfSize(14)
-    label.textColor = UIColor.redColor()
-    label.layer.borderColor = label.textColor.CGColor
-    label.backgroundColor = UIColor.blackColor()
-    label.textAlignment = .Center
+    label.textColor = UIColor.red
+    label.layer.borderColor = label.textColor.cgColor
+    label.backgroundColor = UIColor.black
+    label.textAlignment = .center
     return label
   }()
 
-  private lazy var scrollView: UIScrollView = {
+  fileprivate lazy var scrollView: UIScrollView = {
     let scrollView = UIScrollView()
-    scrollView.backgroundColor = UIColor.blackColor()
+    scrollView.backgroundColor = UIColor.black
     scrollView.bounces = false
     return scrollView
   }()
 
   internal var didTapClosure: ((Void) -> (Void))?
 
-  private dynamic func gestureRecognizerDidTap() {
+  fileprivate dynamic func gestureRecognizerDidTap() {
     self.didTapClosure?()
   }
 
@@ -119,14 +119,14 @@ internal class GuruMeditationViewController: UIViewController {
     self.updateErrorLabelText()
   }
 
-  override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: NSBundle?) {
+  override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
     super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
     self.updateErrorLabelText()
   }
 
   override internal func viewDidLoad() {
     super.viewDidLoad()
-    self.view.backgroundColor = UIColor.blackColor()
+    self.view.backgroundColor = UIColor.black
     self.view.addSubview(self.scrollView)
     self.scrollView.addSubview(self.errorLabel)
     self.view.addGestureRecognizer(UITapGestureRecognizer(
@@ -139,20 +139,20 @@ internal class GuruMeditationViewController: UIViewController {
     var frame = self.view.bounds.insetBy(dx: margin, dy: margin)
     frame.size.height = self.errorLabel.sizeThatFits(frame.size).height + margin * 4
     self.scrollView.frame = self.view.bounds
-    self.scrollView.contentSize.height = CGRectGetMaxY(self.errorLabel.frame)
+    self.scrollView.contentSize.height = self.errorLabel.frame.maxY
     self.errorLabel.frame = frame
   }
 
-  internal override func viewDidAppear(animated: Bool) {
+  internal override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
     flash()
   }
 
-  private func flash() {
+  fileprivate func flash() {
     self.errorLabel.textColor = self.style == .Error
-        ? UIColor.redColor()
-        : UIColor.yellowColor()
-    self.errorLabel.layer.borderColor = self.errorLabel.textColor.CGColor
+        ? UIColor.red
+        : UIColor.yellow
+    self.errorLabel.layer.borderColor = self.errorLabel.textColor.cgColor
     self.errorLabel.layer.borderWidth = self.errorLabel.layer.borderWidth > 0 ? 0 : 6
     delay(0.5) { [weak self] in
       self?.flash()
@@ -160,47 +160,42 @@ internal class GuruMeditationViewController: UIViewController {
   }
 }
 
-private func delay(delay: Double, closure:()->()) {
-  dispatch_after(
-      dispatch_time(DISPATCH_TIME_NOW, Int64(delay * Double(NSEC_PER_SEC))),
-      dispatch_get_main_queue(),
-      closure)
+private func delay(_ delay: Double, closure:@escaping ()->()) {
+  DispatchQueue.main.asyncAfter(
+      deadline: DispatchTime.now() + Double(Int64(delay * Double(NSEC_PER_SEC))) / Double(NSEC_PER_SEC),
+      execute: closure)
 }
 
 // MARK: - Extensions
 
-private extension NSBundle {
+private extension Bundle {
 
-  class func guruMeditationFaultBundle() -> NSBundle {
-    var bundle = NSBundle()
-    var predicate = dispatch_once_t()
-    dispatch_once(&predicate) {
-      let mainBundlePath = NSBundle.mainBundle().bundlePath
-      let frameworkBundlePath =
-        mainBundlePath.stringByAppendingString("/Frameworks/GuruMeditation.framework/")
-      bundle = NSBundle(path: frameworkBundlePath)!
-    }
+  class func guruMeditationFaultBundle() -> Bundle {
+    var bundle = Bundle()
+    var predicate = Int()
+    let mainBundlePath = Bundle.main.bundlePath
+    let frameworkBundlePath =
+      mainBundlePath + "/Frameworks/GuruMeditation.framework/"
+    bundle = Bundle(path: frameworkBundlePath)!
     return bundle
   }
 
   class func loadTopazFont() -> Bool {
-    let fontPath = self.guruMeditationFaultBundle().pathForResource("Topaz", ofType: "ttf")!
-    let inData = NSData(contentsOfFile:fontPath)
+    let fontPath = self.guruMeditationFaultBundle().path(forResource: "Topaz", ofType: "ttf")!
+    let inData = try? Data(contentsOf: URL(fileURLWithPath: fontPath))
     var error: Unmanaged<CFError>?
-    let provider = CGDataProviderCreateWithCFData(inData)
-    if let font = CGFontCreateWithDataProvider(provider) {
-      CTFontManagerRegisterGraphicsFont(font, &error)
-      return error != nil
-    }
-    return true
+    let provider = CGDataProvider(data: inData as! CFData)
+    let font = CGFont(provider!)
+    CTFontManagerRegisterGraphicsFont(font, &error)
+    return error != nil
   }
 }
 
 private extension UIFont {
 
-  class func topazFontOfSize(size: CGFloat) -> UIFont {
+  class func topazFontOfSize(_ size: CGFloat) -> UIFont {
     let font: UIFont? = UIFont(name: "TopazPlus a600a1200a4000", size: size)
-    return font ?? UIFont.boldSystemFontOfSize(size)
+    return font ?? UIFont.boldSystemFont(ofSize: size)
   }
 }
 
@@ -210,10 +205,10 @@ private class InsetLabel: UILabel {
     super.init(frame: frame)
   }
 
-  override func drawTextInRect(rect: CGRect) {
+  override func drawText(in rect: CGRect) {
     let margin: CGFloat = 16
     let insets = UIEdgeInsets.init(top: margin, left: margin, bottom: margin, right: margin)
-    super.drawTextInRect(UIEdgeInsetsInsetRect(rect, insets))
+    super.drawText(in: UIEdgeInsetsInsetRect(rect, insets))
   }
 
   required init?(coder aDecoder: NSCoder) {
@@ -229,13 +224,13 @@ internal class OverlayWindow {
     return overlayViewController.containedViewController
   }
 
-  private var overlayWindow: UIWindow? = {
-    let window = UIWindow(frame: UIScreen.mainScreen().bounds)
-    window.hidden = false
+  fileprivate var overlayWindow: UIWindow? = {
+    let window = UIWindow(frame: UIScreen.main.bounds)
+    window.isHidden = false
     return window
   }()
 
-  private let overlayViewController: OverlayViewController
+  fileprivate let overlayViewController: OverlayViewController
 
   init(containedViewController: UIViewController) {
     self.overlayViewController =
@@ -249,10 +244,10 @@ internal class OverlayWindow {
 
   /** Force the dismissal of the overlay window. */
   func dismiss() {
-    overlayWindow?.autoresizingMask = .None
+    overlayWindow?.autoresizingMask = UIViewAutoresizing()
     overlayWindow?.autoresizesSubviews = false
     overlayWindow?.frame = CGRect.zero
-    overlayWindow?.hidden = true
+    overlayWindow?.isHidden = true
     overlayWindow?.rootViewController = nil
     overlayWindow = nil
   }
@@ -264,7 +259,7 @@ internal extension OverlayWindow {
   static var sharedModalOverlay: OverlayWindow?
 
   /** Application-wide function used to show an interstitial screen. */
-  static func presentModalOverlay(viewController: UIViewController) {
+  static func presentModalOverlay(_ viewController: UIViewController) {
     OverlayWindow.sharedModalOverlay =
       OverlayWindow(containedViewController: viewController)
   }
@@ -281,11 +276,11 @@ internal class OverlayViewController: UIViewController {
     fatalError("storyboards not supported")
   }
 
-  override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: NSBundle?) {
+  override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
     fatalError("The default init is not available for this controller.")
   }
 
-  private let containedViewController: UIViewController
+  fileprivate let containedViewController: UIViewController
 
   required init(containedViewController: UIViewController) {
     self.containedViewController = containedViewController
@@ -293,7 +288,7 @@ internal class OverlayViewController: UIViewController {
   }
 
   deinit {
-    containedViewController.willMoveToParentViewController(nil)
+    containedViewController.willMove(toParentViewController: nil)
     containedViewController.view.removeFromSuperview()
     containedViewController.removeFromParentViewController()
   }
@@ -304,17 +299,17 @@ internal class OverlayViewController: UIViewController {
     addChildViewController(self.containedViewController)
     containedViewController.view.frame = view.frame
     view.addSubview(containedViewController.view)
-    containedViewController.didMoveToParentViewController(self)
+    containedViewController.didMove(toParentViewController: self)
   }
 
-  override func viewWillAppear(animated: Bool) {
+  override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
     updateContainedViewControllerLayout()
   }
 
-  private func updateContainedViewControllerLayout() {
+  fileprivate func updateContainedViewControllerLayout() {
     containedViewController.view.frame = view.bounds
-    view.backgroundColor = UIColor.clearColor()
+    view.backgroundColor = UIColor.clear
   }
 
   // MARK - Forwarding Methods to Child Controllers
@@ -323,25 +318,25 @@ internal class OverlayViewController: UIViewController {
     return true
   }
 
-  override func shouldAutomaticallyForwardAppearanceMethods() -> Bool {
+  override var shouldAutomaticallyForwardAppearanceMethods : Bool {
     return true
   }
 
-  override func shouldAutorotate() -> Bool {
+  override var shouldAutorotate : Bool {
     return true
   }
 
-  override func supportedInterfaceOrientations() -> UIInterfaceOrientationMask {
-    return UIInterfaceOrientationMask.AllButUpsideDown
+  override var supportedInterfaceOrientations : UIInterfaceOrientationMask {
+    return UIInterfaceOrientationMask.allButUpsideDown
   }
 
   // MARK - Status bar configuration
 
-  override func childViewControllerForStatusBarStyle() -> UIViewController? {
+  override var childViewControllerForStatusBarStyle : UIViewController? {
     return containedViewController
   }
 
-  override func childViewControllerForStatusBarHidden() -> UIViewController? {
+  override var childViewControllerForStatusBarHidden : UIViewController? {
     return containedViewController
   }
   
